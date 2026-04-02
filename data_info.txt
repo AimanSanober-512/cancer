@@ -1,0 +1,23 @@
+['HeartDisease', 'BMI', 'Smoking', 'AlcoholDrinking', 'Stroke', 'PhysicalHealth', 'MentalHealth', 'DiffWalking', 'Sex', 'AgeCategory', 'Race', 'Diabetic', 'PhysicalActivity', 'GenHealth', 'SleepTime', 'Asthma', 'KidneyDisease', 'SkinCancer']
+
+[{'HeartDisease': 'No', 'BMI': 16.6, 'Smoking': 'Yes', 'AlcoholDrinking': 'No', 'Stroke': 'No', 'PhysicalHealth': 3.0, 'MentalHealth': 30.0, 'DiffWalking': 'No', 'Sex': 'Female', 'AgeCategory': '55-59', 'Race': 'White', 'Diabetic': 'Yes', 'PhysicalActivity': 'Yes', 'GenHealth': 'Very good', 'SleepTime': 5.0, 'Asthma': 'Yes', 'KidneyDisease': 'No', 'SkinCancer': 'Yes'}, {'HeartDisease': 'No', 'BMI': 20.34, 'Smoking': 'No', 'AlcoholDrinking': 'No', 'Stroke': 'Yes', 'PhysicalHealth': 0.0, 'MentalHealth': 0.0, 'DiffWalking': 'No', 'Sex': 'Female', 'AgeCategory': '80 or older', 'Race': 'White', 'Diabetic': 'No', 'PhysicalActivity': 'Yes', 'GenHealth': 'Very good', 'SleepTime': 7.0, 'Asthma': 'No', 'KidneyDisease': 'No', 'SkinCancer': 'No'}, {'HeartDisease': 'No', 'BMI': 26.58, 'Smoking': 'Yes', 'AlcoholDrinking': 'No', 'Stroke': 'No', 'PhysicalHealth': 20.0, 'MentalHealth': 30.0, 'DiffWalking': 'No', 'Sex': 'Male', 'AgeCategory': '65-69', 'Race': 'White', 'Diabetic': 'Yes', 'PhysicalActivity': 'Yes', 'GenHealth': 'Fair', 'SleepTime': 8.0, 'Asthma': 'Yes', 'KidneyDisease': 'No', 'SkinCancer': 'No'}, {'HeartDisease': 'No', 'BMI': 24.21, 'Smoking': 'No', 'AlcoholDrinking': 'No', 'Stroke': 'No', 'PhysicalHealth': 0.0, 'MentalHealth': 0.0, 'DiffWalking': 'No', 'Sex': 'Female', 'AgeCategory': '75-79', 'Race': 'White', 'Diabetic': 'No', 'PhysicalActivity': 'No', 'GenHealth': 'Good', 'SleepTime': 6.0, 'Asthma': 'No', 'KidneyDisease': 'No', 'SkinCancer': 'Yes'}, {'HeartDisease': 'No', 'BMI': 23.71, 'Smoking': 'No', 'AlcoholDrinking': 'No', 'Stroke': 'No', 'PhysicalHealth': 28.0, 'MentalHealth': 0.0, 'DiffWalking': 'Yes', 'Sex': 'Female', 'AgeCategory': '40-44', 'Race': 'White', 'Diabetic': 'No', 'PhysicalActivity': 'Yes', 'GenHealth': 'Very good', 'SleepTime': 8.0, 'Asthma': 'No', 'KidneyDisease': 'No', 'SkinCancer': 'No'}]
+
+HeartDisease         object
+BMI                 float64
+Smoking              object
+AlcoholDrinking      object
+Stroke               object
+PhysicalHealth      float64
+MentalHealth        float64
+DiffWalking          object
+Sex                  object
+AgeCategory          object
+Race                 object
+Diabetic             object
+PhysicalActivity     object
+GenHealth            object
+SleepTime           float64
+Asthma               object
+KidneyDisease        object
+SkinCancer           object
+dtype: object
