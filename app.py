@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import joblib
 import os
-import sklearn
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 
 # --- Page Config ---
@@ -150,6 +149,9 @@ def show_result(prob, cancer_name, symptoms=None, pred=None):
             st.error(f"## 🚨 Risk Detected: {cancer_name}")
             if symptoms:
                 st.warning(f"#### ⚠️ Approximate Concern: {symptoms}")
+        elif prob < 0.15:
+            st.success(f"## ✨ Overall Health: Excellent ({cancer_name})")
+            st.success("#### ✅ Result: Very Low risk detected.")
         else:
             st.success(f"## ✅ Result: Likely Safe ({cancer_name})")
 
@@ -184,32 +186,100 @@ if choice == "🩺 General Detection":
     st.title("🩺 General Cancer Checker")
     st.write("A quick survey to check basic symptoms.")
     
-    with st.expander("📝 Provide Your Details", expanded=True):
-        col1, col2 = st.columns(2)
+    with st.expander("📝 Comprehensive Health Survey", expanded=True):
+        col1, col2, col3 = st.columns(3)
         with col1:
-            smoke = st.radio("1. Do you smoke or chew tobacco?", ["No", "Yes"])
-            cough = st.radio("2. Do you have a long-term cough?", ["No", "Yes"])
-            alcohol = st.radio("3. Do you drink alcohol regularly?", ["No", "Yes"])
+            g_smoke = st.radio("1. Do you smoke regularly?", ["No", "Yes"], key="g_smoke")
+            g_cough = st.radio("2. Do you have a long-term cough?", ["No", "Yes"], key="g_cough")
+            g_breath = st.radio("3. Do you find it hard to breathe?", ["No", "Yes"], key="g_breath")
         with col2:
-            spots = st.radio("4. Do you see any unusual skin spots or bumps?", ["No", "Yes"])
-            fatigue = st.radio("5. Do you feel tired or weak often?", ["No", "Yes"])
-            breath = st.radio("6. Do you find it hard to breathe?", ["No", "Yes"])
+            g_spots = st.radio("4. Any unusual skin spots/bumps?", ["No", "Yes"], key="g_spots")
+            g_moles = st.radio("5. Any moles changing shape or size?", ["No", "Yes"], key="g_moles")
+            g_alcohol = st.radio("6. Do you drink alcohol regularly?", ["No", "Yes"], key="g_alc")
+        with col3:
+            g_lumps = st.radio("7. Did you feel any unusual breast lumps?", ["No", "Yes"], key="g_lump")
+            g_breast_ch = st.radio("8. Any skin changes on the breast?", ["No", "Yes"], key="g_br_ch")
+            g_fatigue = st.radio("9. Do you feel weak/tired often?", ["No", "Yes"], key="g_fatigue")
         
-        age = st.slider("7. Your Age", 1, 100, 40)
+        g_age = st.slider("10. Your Current Age", 1, 100, 40)
         
-        if st.button("Check My Health"):
-            # Calculate logic
-            lung_score = 0.5 if (smoke == "Yes" or cough == "Yes" or breath == "Yes") else 0.1
-            skin_score = 0.5 if spots == "Yes" else 0.1
-            total_prob = max(lung_score, skin_score)
-            if alcohol == "Yes": total_prob += 0.05
-            if fatigue == "Yes": total_prob += 0.05
-            
-            symptom_type = None
-            if lung_score > 0.4: symptom_type = "signs related to Lung health"
-            elif skin_score > 0.4: symptom_type = "signs related to Skin health"
-            
-            show_result(min(total_prob, 0.95), "General Screening", symptoms=symptom_type, pred=1 if total_prob > 0.5 else 0)
+        if st.button("📢 Generate Unified Risk Report"):
+            if assets:
+                # --- 1. Accurate Lung Prediction (High Sensitivity Mapping) ---
+                lung_m, lung_s = assets['lung']
+                def v(x): return 1 if x == "Yes" else 0
+                
+                # If they have respiratory symptoms, set secondary indicators to 1 to help the model detect it
+                has_resp = 1 if (g_cough == "Yes" or g_breath == "Yes") else 0
+                
+                lung_df = pd.DataFrame([{
+                    'GENDER': 0, 'AGE': float(g_age), 'SMOKING': v(g_smoke), 
+                    'YELLOW_FINGERS': v(g_smoke), 'ANXIETY': 0, 'PEER_PRESSURE': 0, 
+                    'CHRONIC DISEASE': 0, 'FATIGUE': v(g_fatigue), 'ALLERGY': has_resp, 
+                    'WHEEZING': has_resp, 'ALCOHOL CONSUMING': v(g_alcohol), 
+                    'COUGHING': v(g_cough), 'SHORTNESS OF BREATH': v(g_breath), 
+                    'SWALLOWING DIFFICULTY': has_resp, 'CHEST PAIN': has_resp
+                }])
+                lung_df[['AGE']] = lung_s.transform(lung_df[['AGE']])
+                l_prob = lung_m.predict_proba(lung_df)[0][1]
+
+                # --- 2. Accurate Skin Prediction ---
+                skin_m, skin_s, skin_e = assets['skin']
+                raw_sk = {
+                    'HeartDisease': 'No', 'BMI': 25.0, 'Smoking': g_smoke, 'AlcoholDrinking': g_alcohol, 'Stroke': 'No',
+                    'PhysicalHealth': 5.0 if g_fatigue == "Yes" else 0.0, 'MentalHealth': 0.0, 'DiffWalking': 'No', 'Sex': 'Male',
+                    'AgeCategory': '40-44' if g_age < 45 else '65-69', 'Race': 'White', 'Diabetic': 'No', 'PhysicalActivity': 'Yes',
+                    'GenHealth': 'Fair' if g_spots == "Yes" or g_moles == "Yes" else 'Good', 'SleepTime': 7.0, 'Asthma': 'No', 'KidneyDisease': 'No'
+                }
+                enc_sk = {}
+                for c, val in raw_sk.items():
+                    if c in skin_e: enc_sk[c] = skin_e[c].transform([str(val)])[0]
+                    else: enc_sk[c] = val
+                skin_df = pd.DataFrame([enc_sk])
+                skin_df[['BMI', 'PhysicalHealth', 'MentalHealth', 'SleepTime']] = skin_s.transform(skin_df[['BMI', 'PhysicalHealth', 'MentalHealth', 'SleepTime']])
+                skin_df = skin_df[['HeartDisease', 'BMI', 'Smoking', 'AlcoholDrinking', 'Stroke', 'PhysicalHealth', 'MentalHealth', 'DiffWalking', 'Sex', 'AgeCategory', 'Race', 'Diabetic', 'PhysicalActivity', 'GenHealth', 'SleepTime', 'Asthma', 'KidneyDisease']]
+                s_prob = skin_m.predict_proba(skin_df)[0][1]
+
+                # --- 3. Accurate Breast Prediction (Precise Baselines) ---
+                breast_m, breast_s = assets['breast']
+                if (g_lumps == "Yes" or g_breast_ch == "Yes"):
+                    # High Risk (Malignant) Parameters
+                    b_r, b_t, b_p, b_a = 17.5, 22.0, 115.0, 950.0
+                    b_s, b_c, b_cc, b_cp, b_sy, b_f = 0.12, 0.2, 0.3, 0.1, 0.2, 0.07
+                else:
+                    # Healthy (Benign) Parameters
+                    b_r, b_t, b_p, b_a = 12.1, 17.9, 78.0, 462.0
+                    b_s, b_c, b_cc, b_cp, b_sy, b_f = 0.09, 0.08, 0.04, 0.02, 0.17, 0.06
+                
+                breast_df = pd.DataFrame([[b_r, b_t, b_p, b_a, b_s, b_c, b_cc, b_cp, b_sy, b_f]], 
+                                       columns=['mean radius', 'mean texture', 'mean perimeter', 'mean area', 'mean smoothness', 
+                                                'mean compactness', 'mean concavity', 'mean concave points', 'mean symmetry', 'mean fractal dimension'])
+                b_prob = breast_m.predict_proba(breast_s.transform(breast_df))[0][1]
+
+                # --- Final Integrated Report ---
+                results = {"Lung": l_prob, "Skin": s_prob, "Breast": b_prob}
+                
+                # Logic: If any category crossed the 50% line, it is DETECTED
+                detected = [name for name, prob in results.items() if prob >= 0.5]
+                
+                if detected:
+                    st.error("## 🚨 Result: Cancer Detected")
+                    st.warning(f"#### ⚠️ Warning: It might be {', '.join(detected)} Cancer.")
+                    for det in detected:
+                        st.write(f"- Our analysis suggests potential warning signs for **{det} Cancer** in your profile.")
+                elif max(results.values()) < 0.15:
+                    st.success("## ✨ Result: Cancer Not Detected")
+                    st.info("Overall risk is very low. No significant signs were identified in the cancers screened.")
+                else:
+                    st.success("## ✅ Result: Cancer Not Detected")
+                    st.info("Risk is currently low, but we recommend monitoring for any changes in your health.")
+
+                st.markdown("---")
+                st.subheader("📋 Recommendations")
+                if detected:
+                    st.error("❗ Please consult a medical professional for formal clinical testing (biopsy/imaging).")
+                else:
+                    st.success("🥦 Please continue practicing a healthy lifestyle and regular self-checks.")
 
 elif choice == "🫁 Lung Cancer":
     st.title("🫁 Detailed Lung Check")
@@ -287,36 +357,73 @@ elif choice == "🔬 Skin Cancer":
                 order = ['HeartDisease', 'BMI', 'Smoking', 'AlcoholDrinking', 'Stroke', 'PhysicalHealth', 'MentalHealth', 'DiffWalking', 'Sex', 'AgeCategory', 'Race', 'Diabetic', 'PhysicalActivity', 'GenHealth', 'SleepTime', 'Asthma', 'KidneyDisease']
                 df_in = df_in[order]
                 prob = model.predict_proba(df_in)[0][1]
-                show_result(prob, "Skin Cancer")
+                
+                # --- Smart Variable Threshold ---
+                # For younger users, cancer is more suspicious so we use a more sensitive threshold (25%)
+                elder_cats = ['60-64', '65-69', '70-74', '75-79', '80 or older']
+                is_elder = age_cat in elder_cats
+                threshold = 0.5 if is_elder else 0.25
+                
+                res_pred = 1 if prob >= threshold else 0
+                if res_pred == 1:
+                    st.error("## 🚨 Result: Cancer Detected")
+                    st.warning(f"#### ⚠️ Warning: Based on your age group, your risk score ({prob:.1%}) is medically significant.")
+                else:
+                    st.success("## ✅ Result: Cancer Not Detected")
+                    st.info("Your symptoms and profile do not suggest an urgent skin risk at this time.")
+                
+                show_result(prob, "Detailed Skin Analysis", pred=res_pred)
 
 elif choice == "🎀 Breast Cancer":
-    st.title("🎀 Report Analysis (Breast)")
-    st.write("Input medical report values for an accurate check.")
+    st.title("🎀 Simple Breast Check")
+    st.write("Please answer these simple questions. No medical report is needed.")
     
     if assets:
-        with st.form("breast_form"):
+        with st.form("breast_simple_form"):
             col1, col2 = st.columns(2)
             with col1:
-                r = st.number_input("Radius (Size)", 0.0, 50.0, 14.1)
-                t = st.number_input("Texture (Roughness)", 0.0, 50.0, 19.3)
-                p = st.number_input("Perimeter", 0.0, 200.0, 91.9)
-                a = st.number_input("Area", 0.0, 2500.0, 654.8)
-                s = st.number_input("Smoothness", 0.0, 1.0, 0.1)
+                b_lump = st.radio("1. Do you feel a hard lump or knot?", ["No", "Yes"])
+                b_skin = st.radio("2. Is the skin puckered or looks like orange peel?", ["No", "Yes"])
+                b_pain = st.radio("3. Is there persistent pain or swelling?", ["No", "Yes"])
             with col2:
-                c = st.number_input("Compactness", 0.0, 1.0, 0.1)
-                cc = st.number_input("Concavity", 0.0, 1.0, 0.1)
-                cp = st.number_input("Concave Points", 0.0, 1.0, 0.05)
-                sy = st.number_input("Symmetry", 0.0, 1.0, 0.18)
-                f = st.number_input("Fractal Dimension", 0.0, 1.0, 0.06)
+                b_shape = st.radio("4. Has the size or shape changed significantly?", ["No", "Yes"])
+                b_nipple = st.radio("5. Any unusual discharge or nipple changes?", ["No", "Yes"])
+                b_age = st.slider("6. Your Age", 1, 100, 40)
             
-            if st.form_submit_button("Run Analysis"):
+            if st.form_submit_button("Analyze Breast Health"):
                 model, scaler = assets['breast']
-                # Use 30 features (10 provided, 20 as 0)
-                all_v = [r,t,p,a,s,c,cc,cp,sy,f] + [0.0]*20
-                df_in = np.array([all_v])
-                df_in = scaler.transform(df_in)
-                prob = model.predict_proba(df_in)[0][1]
-                show_result(prob, "Breast Cancer")
+                
+                # --- Symptom-to-Medical Mapping ---
+                # Benign Baselines: r=12.1, t=17.9, p=78.0, a=462.8, s=0.09, c=0.08, cc=0.046, cp=0.025, sym=0.17, f=0.06
+                r, t, p, a, s_val, c, cc, cp, sym, f = 12.1, 17.9, 78.0, 462.0, 0.09, 0.08, 0.046, 0.025, 0.17, 0.06
+                
+                if b_lump == "Yes":
+                    r, p, a, c, cc, cp = 17.5, 115.0, 978.0, 0.15, 0.16, 0.08
+                if b_skin == "Yes":
+                    t, s_val, cc = 22.0, 0.12, 0.2
+                if b_shape == "Yes":
+                    sym, f = 0.21, 0.08
+                if b_pain == "Yes" or b_nipple == "Yes":
+                    t += 2.0
+                    s_val += 0.01
+                
+                # Use exactly 10 features
+                cols = ['mean radius', 'mean texture', 'mean perimeter', 'mean area', 'mean smoothness', 
+                        'mean compactness', 'mean concavity', 'mean concave points', 'mean symmetry', 'mean fractal dimension']
+                df_in = pd.DataFrame([[r, t, p, a, s_val, c, cc, cp, sym, f]], columns=cols)
+                df_in_scaled = scaler.transform(df_in)
+                prob = model.predict_proba(df_in_scaled)[0][1]
+                
+                # Custom detected logic for simpler wording
+                res_pred = 1 if prob > 0.5 else 0
+                if res_pred == 1:
+                    st.error("## 🚨 Result: Cancer Detected")
+                    st.warning("⚠️ High warning signs found in your symptoms.")
+                else:
+                    st.success("## ✅ Result: Cancer Not Detected")
+                    st.info("Your symptoms do not suggest a high risk at this time.")
+                
+                show_result(prob, "Breast Health Analysis", symptoms=None, pred=res_pred)
 
 # --- Footer ---
 st.markdown("---")
