@@ -220,8 +220,8 @@ if choice == "🩺 General Detection":
                     'COUGHING': v(g_cough), 'SHORTNESS OF BREATH': v(g_breath), 
                     'SWALLOWING DIFFICULTY': has_resp, 'CHEST PAIN': has_resp
                 }])
-                lung_df[['AGE']] = lung_s.transform(lung_df[['AGE']])
-                l_prob = lung_m.predict_proba(lung_df)[0][1]
+                lung_df[['AGE']] = lung_s.transform(lung_df[['AGE']].values)
+                l_prob = lung_m.predict_proba(lung_df.values)[0][1]
 
                 # --- 2. Accurate Skin Prediction ---
                 skin_m, skin_s, skin_e = assets['skin']
@@ -236,9 +236,9 @@ if choice == "🩺 General Detection":
                     if c in skin_e: enc_sk[c] = skin_e[c].transform([str(val)])[0]
                     else: enc_sk[c] = val
                 skin_df = pd.DataFrame([enc_sk])
-                skin_df[['BMI', 'PhysicalHealth', 'MentalHealth', 'SleepTime']] = skin_s.transform(skin_df[['BMI', 'PhysicalHealth', 'MentalHealth', 'SleepTime']])
+                skin_df[['BMI', 'PhysicalHealth', 'MentalHealth', 'SleepTime']] = skin_s.transform(skin_df[['BMI', 'PhysicalHealth', 'MentalHealth', 'SleepTime']].values)
                 skin_df = skin_df[['HeartDisease', 'BMI', 'Smoking', 'AlcoholDrinking', 'Stroke', 'PhysicalHealth', 'MentalHealth', 'DiffWalking', 'Sex', 'AgeCategory', 'Race', 'Diabetic', 'PhysicalActivity', 'GenHealth', 'SleepTime', 'Asthma', 'KidneyDisease']]
-                s_prob = skin_m.predict_proba(skin_df)[0][1]
+                s_prob = skin_m.predict_proba(skin_df.values)[0][1]
 
                 # --- 3. Accurate Breast Prediction (Precise Baselines) ---
                 breast_m, breast_s = assets['breast']
@@ -254,7 +254,7 @@ if choice == "🩺 General Detection":
                 breast_df = pd.DataFrame([[b_r, b_t, b_p, b_a, b_s, b_c, b_cc, b_cp, b_sy, b_f]], 
                                        columns=['mean radius', 'mean texture', 'mean perimeter', 'mean area', 'mean smoothness', 
                                                 'mean compactness', 'mean concavity', 'mean concave points', 'mean symmetry', 'mean fractal dimension'])
-                b_prob = breast_m.predict_proba(breast_s.transform(breast_df))[0][1]
+                b_prob = breast_m.predict_proba(breast_s.transform(breast_df.values))[0][1]
 
                 # --- Final Integrated Report ---
                 results = {"Lung": l_prob, "Skin": s_prob, "Breast": b_prob}
@@ -314,9 +314,9 @@ elif choice == "🫁 Lung Cancer":
                     'WHEEZING': map_v(whe), 'ALCOHOL CONSUMING': map_v(alc), 'COUGHING': map_v(cog),
                     'SHORTNESS OF BREATH': map_v(shb), 'SWALLOWING DIFFICULTY': map_v(swd), 'CHEST PAIN': map_v(cp)
                 }])
-                df_in[['AGE']] = scaler.transform(df_in[['AGE']])
-                prob = model.predict_proba(df_in)[0][1]
-                show_result(prob, "Lung Cancer", pred=model.predict(df_in)[0])
+                df_in[['AGE']] = scaler.transform(df_in[['AGE']].values)
+                prob = model.predict_proba(df_in.values)[0][1]
+                show_result(prob, "Lung Cancer", pred=model.predict(df_in.values)[0])
 
 elif choice == "🔬 Skin Cancer":
     st.title("🔬 Detailed Skin Check")
@@ -353,10 +353,10 @@ elif choice == "🔬 Skin Cancer":
                     else: enc[c] = v
                 df_in = pd.DataFrame([enc])
                 num_cols = ['BMI', 'PhysicalHealth', 'MentalHealth', 'SleepTime']
-                df_in[num_cols] = scaler.transform(df_in[num_cols])
+                df_in[num_cols] = scaler.transform(df_in[num_cols].values)
                 order = ['HeartDisease', 'BMI', 'Smoking', 'AlcoholDrinking', 'Stroke', 'PhysicalHealth', 'MentalHealth', 'DiffWalking', 'Sex', 'AgeCategory', 'Race', 'Diabetic', 'PhysicalActivity', 'GenHealth', 'SleepTime', 'Asthma', 'KidneyDisease']
                 df_in = df_in[order]
-                prob = model.predict_proba(df_in)[0][1]
+                prob = model.predict_proba(df_in.values)[0][1]
                 
                 # --- Smart Variable Threshold ---
                 # For younger users, cancer is more suspicious so we use a more sensitive threshold (25%)
@@ -411,7 +411,7 @@ elif choice == "🎀 Breast Cancer":
                 cols = ['mean radius', 'mean texture', 'mean perimeter', 'mean area', 'mean smoothness', 
                         'mean compactness', 'mean concavity', 'mean concave points', 'mean symmetry', 'mean fractal dimension']
                 df_in = pd.DataFrame([[r, t, p, a, s_val, c, cc, cp, sym, f]], columns=cols)
-                df_in_scaled = scaler.transform(df_in)
+                df_in_scaled = scaler.transform(df_in.values)
                 prob = model.predict_proba(df_in_scaled)[0][1]
                 
                 # Custom detected logic for simpler wording
