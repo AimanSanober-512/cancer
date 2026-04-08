@@ -114,11 +114,26 @@ def load_all_assets():
             "skin": (joblib.load('skin_model.pkl'), joblib.load('skin_scaler.pkl'), joblib.load('skin_encoders.pkl')),
             "breast": (joblib.load('breast_model.pkl'), joblib.load('breast_scaler.pkl'))
         }
+        
+        # --- BULLETPROOF DIAGNOSTIC CHECKS ---
+        # 1. Check Breast Model
+        b_sc = assets['breast'][1]
+        if hasattr(b_sc, 'n_features_in_') and b_sc.n_features_in_ != 10:
+            st.error(f"🚨 CRITICAL: Outdated Breast Model found on GitHub ({b_sc.n_features_in_} features).")
+            st.warning("👉 **FIX**: Please MANUALLY upload 'breast_model.pkl' and 'breast_scaler.pkl' to your GitHub website.")
+            st.stop()
+            
+        # 2. Check Lung Model
+        l_sc = assets['lung'][1]
+        if hasattr(l_sc, 'n_features_in_') and l_sc.n_features_in_ != 1:
+            st.error(f"🚨 CRITICAL: Outdated Lung Model found on GitHub ({l_sc.n_features_in_} features).")
+            st.warning("👉 **FIX**: Please MANUALLY upload 'lung_model.pkl' and 'lung_scaler.pkl'.")
+            st.stop()
+            
         return assets
     except Exception as e:
         st.error(f"Error loading models: {e}")
-        if "sklearn" in str(e) or "StandardScaler" in str(e):
-            st.info("💡 It seems 'scikit-learn' is not correctly installed. Please run: pip install scikit-learn")
+        st.info("💡 Tip: Ensure all .pkl files are pushed to GitHub and matching the current code version.")
         return None
 
 assets = load_all_assets()
